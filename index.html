@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talkify.life | Professional Analytics IST</title>
+    <style>
+        :root { --sage: #8e9a9b; --cream: #fafafa; --text: #4a4a4a; --white: #ffffff; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--cream); color: var(--text); padding: 20px; margin: 0; }
+        
+        .header { text-align: center; margin-bottom: 30px; }
+        h2 { font-weight: 300; color: var(--sage); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; }
+        
+        .controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        .btn { padding: 10px 20px; border-radius: 25px; border: 1px solid var(--sage); background: white; cursor: pointer; color: var(--sage); font-size: 11px; font-weight: 600; text-transform: uppercase; transition: 0.3s; }
+        .btn:hover { background: var(--sage); color: white; }
+        .btn-export { border-color: #555; color: #555; }
+        .btn-export:hover { background: #555; color: white; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; max-width: 1300px; margin: 0 auto; }
+        .card { background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee; display: flex; flex-direction: column; }
+        
+        .media-box { width: 100%; height: 320px; background: #000; overflow: hidden; }
+        .media-box img, .media-box video { width: 100%; height: 100%; object-fit: cover; }
+        
+        .stats-container { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+        .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .stat-box { background: #f9f9f9; padding: 10px; border-radius: 8px; text-align: center; }
+        .stat-val { display: block; font-size: 14px; font-weight: 700; color: #333; }
+        .stat-lab { display: block; font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .eng-rate-box { background: #eef7f7; border: 1px solid #d1e5e5; grid-column: span 2; }
+        .eng-rate-box .stat-val { color: var(--sage); font-size: 18px; }
+
+        .caption { padding: 12px 15px; font-size: 13px; color: #666; height: 40px; overflow: hidden; line-height: 1.4; border-bottom: 1px solid #f9f9f9; margin-bottom: 10px; }
+        .time-row { font-size: 11px; color: #888; background: #fcfcfc; padding: 8px 12px; border-radius: 6px; border: 1px dashed #eee; display: flex; justify-content: space-between; margin-top: auto; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Talkify.life Full Insights (IST)</h2>
+        <div class="controls">
+            <button class="btn" onclick="sortData('date')">📅 By Date</button>
+            <button class="btn" onclick="sortData('engagement')">🔥 By Engagement</button>
+            <button class="btn btn-export" onclick="downloadCSV()">📥 Download CSV Report</button>
+            <button class="btn" onclick="fetchFeed()">🔄 Refresh</button>
+        </div>
+    </div>
+
+    <div id="instagram-feed" class="grid">Syncing Talkify analytics...</div>
+
+    <script>
+        const token = "EAAMl7RTdN68BQ7i9KFrm2o3OmxUuGbCX3NFpHuSFZAptxZCMKBlEzbfQwep0J29ZCuL9mDPoz279rgNAl8r7aZB1WPiVW0jUyve1sSwf7XEm5OMXoEruqysZA3U1llPntt7HPxMXXKqbHZB079uPma3WplV9TIXZAn8rEgZCwVL1KBDAmjGkuplm7yb72QZDZD";
+        const igID = "17841476281000322";
+        let currentData = [];
+
+        async function fetchFeed() {
+            const container = document.getElementById('instagram-feed');
+            try {
+                // Included 'saved' and 'shares' in the request
+                const url = `https://graph.facebook.com/v22.0/${igID}/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,like_count,comments_count,timestamp,insights.metric(views,plays,reach,saved,shares)&limit=100&access_token=${token}`;
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.data) {
+                    currentData = result.data.map(post => {
+                        let reach = 0, views = 0, saved = 0, shares = 0;
+                        if (post.insights && post.insights.data) {
+                            reach = post.insights.data.find(m => m.name === 'reach')?.values[0].value || 0;
+                            views = post.insights.data.find(m => m.name === 'views' || m.name === 'plays')?.values[0].value || 0;
+                            saved = post.insights.data.find(m => m.name === 'saved')?.values[0].value || 0;
+                            shares = post.insights.data.find(m => m.name === 'shares')?.values[0].value || 0;
+                        }
+
+                        // Updated Engagement Formula: (Likes + Comments + Saves + Shares) / Reach
+                        const interactions = (post.like_count || 0) + (post.comments_count || 0) + saved + shares;
+                        const rate = reach > 0 ? ((interactions / reach) * 100).toFixed(2) : 0;
+                        
+                        const d = new Date(post.timestamp);
+                        const istDate = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
+                        const istTime = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
+
+                        return { ...post, reach, views, saved, shares, engagementRate: parseFloat(rate), istDate, istTime };
+                    });
+                    renderFeed(currentData);
+                }
+            } catch (err) { container.innerHTML = "Error: " + err.message; }
+        }
+
+        function renderFeed(data) {
+            const container = document.getElementById('instagram-feed');
+            container.innerHTML = '';
+            data.forEach(post => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                const media = post.media_type === 'VIDEO' 
+                    ? `<video muted loop playsinline poster="${post.thumbnail_url}"><source src="${post.media_url}" type="video/mp4"></video>`
+                    : `<img src="${post.media_url}">`;
+
+                card.innerHTML = `
+                    <div class="media-box"><a href="${post.permalink}" target="_blank">${media}</a></div>
+                    <div class="stats-container">
+                        <div class="metric-grid">
+                            <div class="stat-box"><span class="stat-val">❤️ ${post.like_count || 0}</span><span class="stat-lab">Likes</span></div>
+                            <div class="stat-box"><span class="stat-val">💬 ${post.comments_count || 0}</span><span class="stat-lab">Comments</span></div>
+                            <div class="stat-box"><span class="stat-val">📤 ${post.shares}</span><span class="stat-lab">Shares</span></div>
+                            <div class="stat-box"><span class="stat-val">🔖 ${post.saved}</span><span class="stat-lab">Saves</span></div>
+                            <div class="stat-box"><span class="stat-val">👥 ${post.reach.toLocaleString()}</span><span class="stat-lab">Reach</span></div>
+                            <div class="stat-box"><span class="stat-val">👁️ ${post.views > 0 ? post.views.toLocaleString() : '—'}</span><span class="stat-lab">Views</span></div>
+                            <div class="stat-box eng-rate-box"><span class="stat-val">${post.engagementRate}%</span><span class="stat-lab">Engagement Rate</span></div>
+                        </div>
+                        <div class="caption">${post.caption || ''}</div>
+                        <div class="time-row"><span>📅 <strong>${post.istDate}</strong></span><span>🕒 <strong>${post.istTime}</strong></span></div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function sortData(type) {
+            if (type === 'engagement') {
+                currentData.sort((a, b) => b.engagementRate - a.engagementRate);
+            } else {
+                currentData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            }
+            renderFeed(currentData);
+        }
+
+        function downloadCSV() {
+            if (currentData.length === 0) return;
+            const headers = ["Post ID", "Date (IST)", "Time (IST)", "Type", "Reach", "Views", "Likes", "Comments", "Shares", "Saves", "Eng. Rate (%)", "Caption"];
+            const rows = currentData.map(post => [
+                post.id, post.istDate, post.istTime, post.media_type, post.reach, post.views,
+                post.like_count || 0, post.comments_count || 0, post.shares, post.saved,
+                post.engagementRate, `"${(post.caption || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`
+            ]);
+            const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Talkify_Analytics_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        document.addEventListener("DOMContentLoaded", fetchFeed);
+    </script>
+</body>
+</html>
