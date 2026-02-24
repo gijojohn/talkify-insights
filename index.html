@@ -1,5 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
-    <p> I will be back</p>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talkify.life | Pro Insights</title>
+    <style>
+        :root { --sage: #8e9a9b; --cream: #fafafa; --text: #4a4a4a; --white: #ffffff; }
+        body { font-family: -apple-system, sans-serif; background-color: var(--cream); color: var(--text); padding: 20px; margin: 0; display: flex; flex-direction: column; }
+        .header { text-align: center; margin-bottom: 20px; }
+        
+        /* Secure Auth Box */
+        .auth-box { background: white; padding: 20px; border-radius: 12px; max-width: 350px; margin: 0 auto 30px; border: 1px solid #eee; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        input[type="password"] { padding: 10px; width: 80%; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; font-size: 13px; text-align: center; }
+        
+        /* Top Section: Table & Button */
+        .top-tools { max-width: 1200px; margin: 0 auto 30px; width: 100%; display: none; }
+        .glossary-wrap { background: white; padding: 20px; border-radius: 12px; border: 1px solid #eee; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; font-size: 12px; }
+        th { color: var(--sage); text-transform: uppercase; font-size: 10px; letter-spacing: 1px; }
+        
+        /* Compact Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .card { background: var(--white); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #eee; transition: 0.2s; cursor: pointer; }
+        .card:hover { transform: translateY(-3px); }
+        
+        .media-box { width: 100%; height: 320px; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .media-box img, .media-box video { width: 100%; height: 100%; object-fit: cover; }
+
+        .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 12px; }
+        .stat-box { background: #f9f9f9; padding: 8px; border-radius: 6px; text-align: center; border: 1px solid #f0f0f0; }
+        .stat-val { display: block; font-size: 13px; font-weight: 700; color: #333; }
+        .stat-lab { display: block; font-size: 7px; color: #999; text-transform: uppercase; }
+        .eng-box { background: #eef7f7; border-color: #d1e5e5; grid-column: span 3; padding: 10px; }
+        .eng-box .stat-val { color: var(--sage); font-size: 16px; }
+
+        .time-row { font-size: 10px; color: #888; padding: 10px 12px; display: flex; justify-content: space-between; background: #fafafa; border-top: 1px solid #eee; }
+        .btn { padding: 8px 18px; border-radius: 20px; border: 1px solid var(--sage); background: white; cursor: pointer; color: var(--sage); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .btn:hover { background: var(--sage); color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="color:var(--sage); letter-spacing: 2px; font-weight: 300; margin-bottom: 5px;">TALKIFY.LIFE</h2>
+    </div>
+
+    <div class="auth-box" id="auth-container">
+        <input type="password" id="passkey" placeholder="Access Key">
+        <br>
+        <button class="btn" onclick="unlockDashboard()">Unlock Dashboard</button>
+    </div>
+
+    <div id="top-section" class="top-tools">
+        <div style="text-align:center; margin-bottom: 25px;">
+            <button class="btn" onclick="downloadCSV()">📥 Download Full CSV Report</button>
+        </div>
+
+        <div class="glossary-wrap">
+            <h4 style="color:var(--sage); font-weight: 400; margin: 0 0 15px 0; text-transform: uppercase; font-size: 11px;">Official Metric Dictionary</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Definition</th>
+                        <th>Official Source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Likes/Shares</strong></td><td>Audience interactions.</td><td>Meta Dev Docs</td></tr>
+                    <tr><td><strong>Saves</strong></td><td>Content utility bookmark.</td><td>Meta Dev Docs</td></tr>
+                    <tr><td><strong>Reach</strong></td><td>Unique account views.</td><td>Meta Dev Docs</td></tr>
+                    <tr><td><strong>Views</strong></td><td>Total appearances on screens.</td><td>Meta Business</td></tr>
+                    <tr><td><strong>Hook Rate</strong></td><td>Scroll-stop efficiency (3s).</td><td>Meta Business</td></tr>
+                    <tr><td><strong>Eng. Rate</strong></td><td>Interactions per Reach.</td><td>Industry Std</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="instagram-feed" class="grid" style="display:none;"></div>
+
+    <script>
+        const scrambledToken = "RUFBTWw3UlRkTjY4QlE3aTlLRnJtMm8zT214VXVHYkNYM05GcEh1U0ZaQXB0eFpDTUtCbEV6YmZRd2VwMEoyOVpDdUw5bURQb3oyNzlyZ05BbDhyN2FaQjFXUGlWVzBqVXl2ZTFzU3dmN1hFbTVPTVhvRXJ1cXlzWkEzVTFsbFBudHQ3SFB4TVhYS3FiSFpCMDc5dVBtYTNXcGxWOVRJWFpBbjhyRWdaQ3dWTDFLQkRBbWpHa3VwbG03eWI3MlFaRFpE"; 
+        const igID = "17841476281000322";
+        let currentData = [];
+
+        function unlockDashboard() {
+            const input = document.getElementById('passkey').value;
+            if (input === "talkify2026") {
+                document.getElementById('auth-container').style.display = 'none';
+                document.getElementById('top-section').style.display = 'block';
+                document.getElementById('instagram-feed').style.display = 'grid';
+                fetchAllData(atob(scrambledToken));
+            } else { alert("Access Denied."); }
+        }
+
+        async function fetchAllData(token) {
+            let nextUrl = `https://graph.facebook.com/v22.0/${igID}/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,like_count,comments_count,timestamp,insights.metric(views,reach,saved,shares,profile_visits,ig_reels_avg_watch_time),children{media_url,media_type}&limit=50&access_token=${token}`;
+            try {
+                while (nextUrl) {
+                    const response = await fetch(nextUrl).then(r => r.json());
+                    if (response.data) {
+                        const batch = response.data.map(post => {
+                            const m = (name) => post.insights?.data.find(i => i.name === name)?.values[0].value || 0;
+                            const reach = m('reach');
+                            const views = m('views') || m('plays');
+                            const interactions = (post.like_count || 0) + (post.comments_count || 0) + m('saved') + m('shares');
+                            const d = new Date(post.timestamp);
+                            return {
+                                ...post, reach, views,
+                                istDate: d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short' }),
+                                istTime: d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }),
+                                saved: m('saved'), shares: m('shares'), profileVisits: m('profile_visits'),
+                                hookRate: reach > 0 ? ((views / reach) * 100).toFixed(1) : 0,
+                                engagementRate: reach > 0 ? ((interactions / reach) * 100).toFixed(2) : 0
+                            };
+                        });
+                        currentData = [...currentData, ...batch];
+                        renderFeed(currentData);
+                    }
+                    nextUrl = response.paging?.next || null;
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function renderFeed(data) {
+            const container = document.getElementById('instagram-feed');
+            container.innerHTML = '';
+            data.forEach(p => {
+                const isVideo = p.media_type === 'VIDEO';
+                const displayImg = (p.media_type === 'CAROUSEL_ALBUM' && p.children) ? p.children.data[0].media_url : (p.media_url || p.thumbnail_url);
+                const mediaHtml = isVideo ? `<video muted loop playsinline poster="${p.thumbnail_url || p.media_url}"><source src="${p.media_url}" type="video/mp4"></video>` : `<img src="${displayImg}">`;
+
+                container.innerHTML += `
+                    <div class="card" onclick="window.open('${p.permalink}', '_blank')">
+                        <div class="media-box">${mediaHtml}</div>
+                        <div class="metric-grid">
+                            <div class="stat-box"><span class="stat-val">❤️ ${p.like_count}</span><span class="stat-lab">Likes</span></div>
+                            <div class="stat-box"><span class="stat-val">📤 ${p.shares}</span><span class="stat-lab">Shares</span></div>
+                            <div class="stat-box"><span class="stat-val">🔖 ${p.saved}</span><span class="stat-lab">Saves</span></div>
+                            <div class="stat-box"><span class="stat-val">👥 ${p.reach.toLocaleString()}</span><span class="stat-lab">Reach</span></div>
+                            <div class="stat-box"><span class="stat-val">👁️ ${p.views.toLocaleString()}</span><span class="stat-lab">Views</span></div>
+                            <div class="stat-box"><span class="stat-val">🏠 ${p.profileVisits}</span><span class="stat-lab">Prof. Visits</span></div>
+                            <div class="stat-box" style="background: #fffbe6;"><span class="stat-val">🪝 ${p.hookRate}%</span><span class="stat-lab">Hook Rate</span></div>
+                            <div class="stat-box eng-box"><span class="stat-val">${p.engagementRate}%</span><span class="stat-lab">Engagement Rate</span></div>
+                        </div>
+                        <div class="time-row"><span>📅 ${p.istDate}</span><span>🕒 ${p.istTime} IST</span></div>
+                    </div>`;
+            });
+        }
+
+        function downloadCSV() {
+            const headers = ["ID", "Date", "Time", "Type", "Reach", "Views", "Likes", "Shares", "Saves", "ProfVisits", "HookRate", "EngRate", "Caption"];
+            const rows = currentData.map(p => [p.id, p.istDate, p.istTime, p.media_type, p.reach, p.views, p.like_count, p.shares, p.saved, p.profileVisits, p.hookRate, p.engagementRate, `"${(p.caption || "").replace(/"/g, '""').replace(/\n/g, ' ')}"`]);
+            const csv = [headers, ...rows].map(e => e.join(",")).join("\n");
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+            link.download = "Talkify_Insights.csv";
+            link.click();
+        }
+    </script>
 </body>
 </html>
