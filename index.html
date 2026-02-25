@@ -1,9 +1,15 @@
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talkify.life | Pro Insights</title>
+    <title>Talkify.life | Elite Secure Insights</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
         :root { --sage: #8e9a9b; --cream: #fafafa; --text: #4a4a4a; --white: #ffffff; }
         body { font-family: -apple-system, sans-serif; background-color: var(--cream); color: var(--text); padding: 20px; margin: 0; display: flex; flex-direction: column; }
@@ -48,7 +54,7 @@
     </div>
 
     <div class="auth-box" id="auth-container">
-        <input type="password" id="passkey" placeholder="Access Key">
+        <input type="password" id="passkey" placeholder="Access Key" onkeydown="if(event.key === 'Enter') unlockDashboard()">
         <br>
         <button class="btn" onclick="unlockDashboard()">Unlock Dashboard</button>
     </div>
@@ -65,16 +71,15 @@
                     <tr>
                         <th>Metric</th>
                         <th>Definition</th>
-                        <th>Official Source</th>
+                        <th>Significance</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td><strong>Likes/Shares</strong></td><td>Audience interactions.</td><td>Meta Dev Docs</td></tr>
-                    <tr><td><strong>Saves</strong></td><td>Content utility bookmark.</td><td>Meta Dev Docs</td></tr>
-                    <tr><td><strong>Reach</strong></td><td>Unique account views.</td><td>Meta Dev Docs</td></tr>
-                    <tr><td><strong>Views</strong></td><td>Total appearances on screens.</td><td>Meta Business</td></tr>
-                    <tr><td><strong>Hook Rate</strong></td><td>Scroll-stop efficiency (3s).</td><td>Meta Business</td></tr>
-                    <tr><td><strong>Eng. Rate</strong></td><td>Interactions per Reach.</td><td>Industry Std</td></tr>
+                    <tr><td><strong>Saves</strong></td><td>Content utility bookmark.</td><td>Indicates intent to revisit advice.</td></tr>
+                    <tr><td><strong>Reach</strong></td><td>Unique account views.</td><td>How many individual people saw you.</td></tr>
+                    <tr><td><strong>Views</strong></td><td>Total appearances on screens.</td><td>Frequency & re-watch health.</td></tr>
+                    <tr><td><strong>Hook Rate</strong></td><td>3s View efficiency.</td><td>Did the intro stop the scroll?</td></tr>
+                    <tr><td><strong>Eng. Rate</strong></td><td>Interactions per Reach.</td><td>The "Stickiness" of your content.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -83,18 +88,38 @@
     <div id="instagram-feed" class="grid" style="display:none;"></div>
 
     <script>
-        const scrambledToken = "RUFBTWw3UlRkTjY4QlE3aTlLRnJtMm8zT214VXVHYkNYM05GcEh1U0ZaQXB0eFpDTUtCbEV6YmZRd2VwMEoyOVpDdUw5bURQb3oyNzlyZ05BbDhyN2FaQjFXUGlWVzBqVXl2ZTFzU3dmN1hFbTVPTVhvRXJ1cXlzWkEzVTFsbFBudHQ3SFB4TVhYS3FiSFpCMDc5dVBtYTNXcGxWOVRJWFpBbjhyRWdaQ3dWTDFLQkRBbWpHa3VwbG03eWI3MlFaRFpE"; 
+        // Salted AES Encrypted Token
+        const encryptedToken = "U2FsdGVkX18FWfvIuYZ8sbAItVKYMG/ij3CyUvTYQLusrazrQQL405wsAv3lBevqgMackW0xeIS3nFwXi2h3KnylSjxSxMIwqh1lH5tNJMd1KeJAuq7SpajJzMto9NKZ9CRmoy62wOmruTowE877u6d742Ry1vHsyNOOIPtS0nR9fSOh8l8t3iHvrzCRrEsbyDVyRaOZJL5Q8OTPPG7sVFHQrbOqeKW6zRTH6hNY+bFQOGGsVxHTXoYNdJ+CN//zsZou1GAO0OSrShcnxglMTHFdjNSBq85UhfwKf6RmLvc="; 
         const igID = "17841476281000322";
         let currentData = [];
 
+        // 1. Disable Right Click
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // 2. Disable Common Developer Shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'u')) {
+                e.preventDefault();
+            }
+        });
+
         function unlockDashboard() {
-            const input = document.getElementById('passkey').value;
-            if (input === "talkify2026") {
-                document.getElementById('auth-container').style.display = 'none';
-                document.getElementById('top-section').style.display = 'block';
-                document.getElementById('instagram-feed').style.display = 'grid';
-                fetchAllData(atob(scrambledToken));
-            } else { alert("Access Denied."); }
+            const password = document.getElementById('passkey').value;
+            try {
+                const bytes = CryptoJS.AES.decrypt(encryptedToken, password);
+                const decryptedToken = bytes.toString(CryptoJS.enc.Utf8);
+
+                if (decryptedToken && decryptedToken.startsWith("EAA")) {
+                    document.getElementById('auth-container').style.display = 'none';
+                    document.getElementById('top-section').style.display = 'block';
+                    document.getElementById('instagram-feed').style.display = 'grid';
+                    fetchAllData(decryptedToken);
+                } else {
+                    alert("Access Denied: Invalid Key");
+                }
+            } catch (e) {
+                alert("Access Denied: Invalid Key");
+            }
         }
 
         async function fetchAllData(token) {
@@ -111,7 +136,7 @@
                             const d = new Date(post.timestamp);
                             return {
                                 ...post, reach, views,
-                                istDate: d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short' }),
+                                istDate: d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' }),
                                 istTime: d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }),
                                 saved: m('saved'), shares: m('shares'), profileVisits: m('profile_visits'),
                                 hookRate: reach > 0 ? ((views / reach) * 100).toFixed(1) : 0,
@@ -123,7 +148,7 @@
                     }
                     nextUrl = response.paging?.next || null;
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { console.error("Sync Error:", err); }
         }
 
         function renderFeed(data) {
@@ -153,12 +178,12 @@
         }
 
         function downloadCSV() {
-            const headers = ["ID", "Date", "Time", "Type", "Reach", "Views", "Likes", "Shares", "Saves", "ProfVisits", "HookRate", "EngRate", "Caption"];
+            const headers = ["ID", "Date", "Time (IST)", "Type", "Reach", "Views", "Likes", "Shares", "Saves", "ProfVisits", "HookRate", "EngRate", "Caption"];
             const rows = currentData.map(p => [p.id, p.istDate, p.istTime, p.media_type, p.reach, p.views, p.like_count, p.shares, p.saved, p.profileVisits, p.hookRate, p.engagementRate, `"${(p.caption || "").replace(/"/g, '""').replace(/\n/g, ' ')}"`]);
             const csv = [headers, ...rows].map(e => e.join(",")).join("\n");
             const link = document.createElement('a');
             link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-            link.download = "Talkify_Insights.csv";
+            link.download = "Talkify_Elite_Analytics.csv";
             link.click();
         }
     </script>
